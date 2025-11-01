@@ -23,8 +23,19 @@ Stwórz podstawową aplikację w **Flutter (Dart)** z **natywną funkcją** oraz
 - Pokaż komunikację z **API** (pobranie/zapis), zachowanie bez internetu/bez uprawnień.
 
 ## Definition of Done (DoD)
-- [ ] 3–4 widoki, kompletna nawigacja.
-- [ ] Co najmniej 1 **natywna funkcja**.
-- [ ] Co najmniej 1 operacja **API** (GET/POST).
-- [ ] Stany: ładowanie, błąd, pusty.
-- [ ] `README.md`, zrzuty ekranów, min. 3 commity.
+- [+] 3–4 widoki, kompletna nawigacja.
+  ![](https://media.discordapp.net/attachments/293098662962135040/1434203024577790072/Screenshot_20251101-162629.png?ex=69077927&is=690627a7&hm=59bcfcc67dade5eb519de49964c5f8b2e8a9503c9cac4a9435a2056ab152f294&=&format=webp&quality=lossless&width=389&height=873)
+  ![](https://media.discordapp.net/attachments/293098662962135040/1434203023588065290/Screenshot_20251101-162726.png?ex=69077927&is=690627a7&hm=5b89412eac4399fd96defa5f6ab86a9fdf283a06c199fe8273de3f8c40b6a5de&=&format=webp&quality=lossless&width=389&height=873)
+  ![](https://media.discordapp.net/attachments/293098662962135040/1434203024955543663/Screenshot_20251101-162640.png?ex=69077927&is=690627a7&hm=2dbba973a5692d3dde22c4502b24b2ecc6ff2aa928e91df52c1c4d6833d7445a&=&format=webp&quality=lossless&width=389&height=873)
+  ![](https://media.discordapp.net/attachments/293098662962135040/1434203024192180317/Screenshot_20251101-162708.png?ex=69077927&is=690627a7&hm=65c5e5684b6d67d7eaf3d9686c4854e0782f9256209b561eefebd4cc51031333&=&format=webp&quality=lossless&width=389&height=873)
+
+
+- [+] Co najmniej 1 **natywna funkcja**. 
+**GPS + Kamera**
+- [+] Co najmniej 1 operacja **API** (GET/POST).
+**GET /journal_entries - Fetch journal entries from MockAPI**
+**POST /journal_entries - Create new journal entries**
+**DELETE /journal_entries/:id - Remove entries**
+- [+] Stany: ładowanie, błąd, pusty.
+- [+] `README.md`, zrzuty ekranów, min. 3 commity.
+
