@@ -26,6 +26,7 @@ Stwórz podstawową aplikację w **Flutter (Dart)** z **natywną funkcją** oraz
 - [+] 3–4 widoki, kompletna nawigacja.
 <details>
   <summary>Screenshots</summary>
+  
   ![](https://media.discordapp.net/attachments/293098662962135040/1434203024577790072/Screenshot_20251101-162629.png?ex=69077927&is=690627a7&hm=59bcfcc67dade5eb519de49964c5f8b2e8a9503c9cac4a9435a2056ab152f294&=&format=webp&quality=lossless&width=389&height=873)
 
   ![](https://media.discordapp.net/attachments/293098662962135040/1434203023588065290/Screenshot_20251101-162726.png?ex=69077927&is=690627a7&hm=5b89412eac4399fd96defa5f6ab86a9fdf283a06c199fe8273de3f8c40b6a5de&=&format=webp&quality=lossless&width=389&height=873)
