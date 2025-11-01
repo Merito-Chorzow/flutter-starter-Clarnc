@@ -8,14 +8,16 @@ class JournalEntry {
   final DateTime createdAt;
 
   JournalEntry({
-    required this.id,
+    String? id,
     required this.title,
     required this.description,
     this.latitude,
     this.longitude,
     this.imagePath,
-    required this.createdAt,
-  });
+    DateTime? createdAt,
+  }) : 
+    id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    createdAt = createdAt ?? DateTime.now();
 
   Map<String, dynamic> toJson() {
     return {
@@ -26,18 +28,21 @@ class JournalEntry {
       'longitude': longitude,
       'imagePath': imagePath,
       'createdAt': createdAt.toIso8601String(),
+      // MockAPI automatically adds 'createdAt' field, but we'll keep ours for consistency
     };
   }
 
   factory JournalEntry.fromJson(Map<String, dynamic> json) {
     return JournalEntry(
-      id: json['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      title: json['title'],
-      description: json['description'],
-      latitude: json['latitude'],
-      longitude: json['longitude'],
+      id: json['id']?.toString(),
+      title: json['title'] ?? 'No Title',
+      description: json['description'] ?? 'No Description',
+      latitude: json['latitude'] != null ? double.tryParse(json['latitude'].toString()) : null,
+      longitude: json['longitude'] != null ? double.tryParse(json['longitude'].toString()) : null,
       imagePath: json['imagePath'],
-      createdAt: DateTime.parse(json['createdAt']),
+      createdAt: json['createdAt'] != null 
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
     );
   }
 }

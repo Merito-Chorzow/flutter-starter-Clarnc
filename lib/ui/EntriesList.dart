@@ -14,7 +14,6 @@ class EntriesListPage extends StatefulWidget {
 class EntriesListPageState extends State<EntriesListPage> {
   final ApiService _apiService = ApiService();
   late Future<List<JournalEntry>> _entriesFuture;
-  List<JournalEntry> _allEntries = [];
 
   @override
   void initState() {
@@ -30,36 +29,26 @@ class EntriesListPageState extends State<EntriesListPage> {
 
   void _loadEntries() {
     setState(() {
-      _entriesFuture = _apiService.getEntries().then((entries) {
-        _allEntries = entries;
-        return entries;
-      });
+      _entriesFuture = _apiService.getEntries();
     });
   }
 
   void _navigateToDetail(JournalEntry entry) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EntryDetailPage(entry: entry),
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => EntryDetailPage(
+        entry: entry,
+        onEntryDeleted: refreshEntries,
       ),
-    );
-  }
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Geo Journal'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: refreshEntries,
-            tooltip: 'Refresh',
-          ),
-        ],
-      ),
+      
       body: FutureBuilder<List<JournalEntry>>(
         future: _entriesFuture,
         builder: (context, snapshot) {
@@ -76,6 +65,11 @@ class EntriesListPageState extends State<EntriesListPage> {
           }
         },
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: refreshEntries,
+        tooltip: 'Refresh',
+        child: const Icon(Icons.refresh),
+      ),
     );
   }
 
@@ -86,17 +80,17 @@ class EntriesListPageState extends State<EntriesListPage> {
         children: [
           const Icon(Icons.error_outline, size: 64, color: Colors.red),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'Failed to load entries',
-            style: Theme.of(context).textTheme.headlineSmall,
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32.0),
             child: Text(
-              error.length > 100 ? 'Network error' : error,
+              error.length > 100 ? 'Please check your connection' : error,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: const TextStyle(fontSize: 14),
             ),
           ),
           const SizedBox(height: 16),
@@ -116,12 +110,29 @@ class EntriesListPageState extends State<EntriesListPage> {
         children: [
           const Icon(Icons.note_add, size: 64, color: Colors.grey),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'No entries yet',
-            style: Theme.of(context).textTheme.headlineSmall,
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           const Text('Add your first entry using the + tab'),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              // Navigate to add page
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                // Change to add tab (index 1)
+                // You might need to access the parent widget's state to change tab
+                // For now, just show a message
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Use the + tab to add entries'),
+                  ),
+                );
+              });
+            },
+            child: const Text('Add First Entry'),
+          ),
         ],
       ),
     );
@@ -135,58 +146,75 @@ class EntriesListPageState extends State<EntriesListPage> {
       itemCount: entries.length,
       itemBuilder: (context, index) {
         final entry = entries[index];
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-          child: ListTile(
-            leading: _buildEntryLeading(entry),
-            title: Text(
-              entry.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  entry.description.length > 50 
-                    ? '${entry.description.substring(0, 50)}...' 
-                    : entry.description,
-                  maxLines: 1,
-                ),
-                Text(
-                  '${entry.createdAt.day}/${entry.createdAt.month}/${entry.createdAt.year} ${entry.createdAt.hour}:${entry.createdAt.minute.toString().padLeft(2, '0')}',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ],
-            ),
-            trailing: entry.latitude != null 
-                ? const Icon(Icons.location_on, color: Colors.green, size: 20)
-                : null,
-            onTap: () => _navigateToDetail(entry),
-          ),
-        );
+        return _buildEntryItem(entry);
       },
     );
   }
 
-  Widget _buildEntryLeading(JournalEntry entry) {
-    if (entry.imagePath != null && entry.imagePath!.isNotEmpty) {
-      try {
-        return CircleAvatar(
-          backgroundImage: FileImage(File(entry.imagePath!)),
-          radius: 20,
-        );
-      } catch (e) {
-        print('Error loading image: $e');
-        return _buildDefaultAvatar(entry);
-      }
-    } else {
-      return _buildDefaultAvatar(entry);
-    }
+  Widget _buildEntryItem(JournalEntry entry) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+      child: ListTile(
+        leading: _buildEntryLeading(entry),
+        title: Text(
+          entry.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              entry.description.length > 60 
+                ? '${entry.description.substring(0, 60)}...' 
+                : entry.description,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${_formatDate(entry.createdAt)}',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        trailing: _buildEntryTrailing(entry),
+        onTap: () => _navigateToDetail(entry),
+      ),
+    );
   }
 
-  Widget _buildDefaultAvatar(JournalEntry entry) {
+  Widget _buildEntryLeading(JournalEntry entry) {
+  // Try to load image if path exists
+  if (entry.imagePath != null && entry.imagePath!.isNotEmpty) {
+    try {
+      final file = File(entry.imagePath!);
+      // Check if file exists and is readable
+      if (file.existsSync()) {
+        return CircleAvatar(
+          radius: 22,
+          backgroundImage: FileImage(file),
+          onBackgroundImageError: (exception, stackTrace) {
+            print('Error loading image for ${entry.title}: $exception');
+          },
+        );
+      } else {
+        print('Image file does not exist at: ${entry.imagePath}');
+        return _buildDefaultLeading(entry);
+      }
+    } catch (e) {
+      print('Error loading image for ${entry.title}: $e');
+      return _buildDefaultLeading(entry);
+    }
+  } else {
+    return _buildDefaultLeading(entry);
+  }
+}
+
+  Widget _buildDefaultLeading(JournalEntry entry) {
     return CircleAvatar(
+      radius: 22,
       backgroundColor: entry.latitude != null ? Colors.blue : Colors.grey,
       child: Icon(
         entry.latitude != null ? Icons.location_on : Icons.note,
@@ -195,4 +223,57 @@ class EntriesListPageState extends State<EntriesListPage> {
       ),
     );
   }
+
+  Widget _buildEntryTrailing(JournalEntry entry) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (entry.latitude != null)
+          const Icon(Icons.location_on, color: Colors.green, size: 20),
+        if (entry.imagePath != null && entry.imagePath!.isNotEmpty)
+          const Icon(Icons.photo, color: Colors.blue, size: 16),
+      ],
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    
+    if (difference.inDays > 0) {
+      return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''} ago';
+    } else {
+      return 'Just now';
+    }
+  }
+
+ 
+void _deleteEntry(JournalEntry entry) async {
+  try {
+    final ApiService apiService = ApiService();
+    await apiService.deleteEntry(entry.id);
+    
+    
+    refreshEntries();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Entry deleted successfully'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  } catch (e) {
+    print('Error deleting entry: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error deleting entry: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+}
 }

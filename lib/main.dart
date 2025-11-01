@@ -13,12 +13,21 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      
+      title: 'Geo Journal',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 134, 55, 35)),
-        useMaterial3: true
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue, 
+          brightness: Brightness.light,
+        ),
+        useMaterial3: true,
       ),
-      darkTheme: ThemeData.dark(),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+      ),
       themeMode: ThemeMode.system,
       home: const MyHomePage(title: 'Geo Journal'),
     );
@@ -38,6 +47,19 @@ class _MyHomePageState extends State<MyHomePage> {
   int _currentIndex = 0;
   final GlobalKey<EntriesListPageState> _entriesListKey = GlobalKey();
 
+  final List<Widget> _pages = [
+    const EntriesListPage(),
+    const AddEntryPage(),
+    const SettingsPage(),
+  ];
+
+  // App bar titles for each tab
+  final List<String> _appBarTitles = [
+    'Geo Journal',
+    'Add New Entry',
+    'Settings'
+  ];
+
   void _refreshEntries() {
     _entriesListKey.currentState?.refreshEntries();
   }
@@ -45,10 +67,10 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _currentIndex == 0 ? AppBar(
-        title: Text(widget.title),
+      appBar: AppBar(
+        title: Text(_appBarTitles[_currentIndex]),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ) : null,
+      ),
       body: IndexedStack(
         index: _currentIndex,
         children: [

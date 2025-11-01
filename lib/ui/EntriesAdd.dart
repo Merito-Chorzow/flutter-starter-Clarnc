@@ -5,6 +5,7 @@ import 'package:flutter_application_1/services/APIservice.dart';
 import 'package:flutter_application_1/services/LocationService.dart';
 import 'package:flutter_application_1/services/ImageService.dart';
 
+
 class AddEntryPage extends StatefulWidget {
   final VoidCallback? onEntryAdded;
   
@@ -80,70 +81,77 @@ class _AddEntryPageState extends State<AddEntryPage> {
     }
   }
 
-  Future<void> _submitEntry() async {
-    if (!_formKey.currentState!.validate()) return;
+ Future<void> _submitEntry() async {
+  if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isSubmitting = true;
-    });
+  setState(() {
+    _isSubmitting = true;
+  });
 
-    try {
-      final newEntry = JournalEntry(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: _titleController.text,
-        description: _descriptionController.text,
-        latitude: _latitude,
-        longitude: _longitude,
-        imagePath: _image?.path, // Store the file path
-        createdAt: DateTime.now(),
+  try {
+    final newEntry = JournalEntry(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: _titleController.text,
+      description: _descriptionController.text,
+      latitude: _latitude,
+      longitude: _longitude,
+      imagePath: _image?.path,
+      createdAt: DateTime.now(),
+    );
+
+    print('=== CREATING NEW ENTRY ===');
+    print('Title: ${newEntry.title}');
+    print('Description: ${newEntry.description}');
+    print('Has location: ${_latitude != null}');
+    print('Has image: ${_image != null}');
+    if (_image != null) {
+      print('Image path: ${_image!.path}');
+      print('Image exists: ${_image!.existsSync()}');
+    }
+
+    await _apiService.createEntry(newEntry);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Entry created successfully!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
       );
 
-      print('Creating entry with title: ${newEntry.title}');
-      if (_image != null) {
-        print('Image path: ${_image!.path}');
-      }
+      // Clear form
+      _titleController.clear();
+      _descriptionController.clear();
+      setState(() {
+        _latitude = null;
+        _longitude = null;
+        _image = null;
+        _isSubmitting = false;
+      });
 
-      await _apiService.createEntry(newEntry);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Entry created successfully!'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-
-        // Clear form
-        _titleController.clear();
-        _descriptionController.clear();
-        setState(() {
-          _latitude = null;
-          _longitude = null;
-          _image = null;
-          _isSubmitting = false;
-        });
-
-        // Notify that an entry was added
-        widget.onEntryAdded?.call();
-        
-        print('Entry created and callback called');
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error creating entry: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
+      // Notify that an entry was added
+      widget.onEntryAdded?.call();
+      
+      print('=== ENTRY CREATED SUCCESSFULLY ===');
+      print('Callback should refresh the list');
+    }
+  } catch (e) {
+    print('=== ERROR CREATING ENTRY ===');
+    print('Error: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error creating entry: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      setState(() {
+        _isSubmitting = false;
+      });
     }
   }
-
+}
   void _clearForm() {
     _titleController.clear();
     _descriptionController.clear();

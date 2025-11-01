@@ -3,67 +3,72 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_application_1/models/entry.dart';
 
 class ApiService {
-  static const String baseUrl = 'https://jsonplaceholder.typicode.com';
-  static const String postsEndpoint = '$baseUrl/posts';
 
-  // Local storage simulation since JSONPlaceholder doesn't actually save data
-  static List<JournalEntry> _localEntries = [];
+  static const String baseUrl = 'https://690614f9ee3d0d14c134c10e.mockapi.io';
+  static const String entriesEndpoint = '$baseUrl/api/v1/journal_entries/';
 
   Future<List<JournalEntry>> getEntries() async {
     try {
-      final response = await http.get(Uri.parse(postsEndpoint));
+      print('Fetching entries from: $entriesEndpoint');
+      final response = await http.get(Uri.parse(entriesEndpoint));
       
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
+        print('Successfully fetched ${data.length} entries from API');
         
-        // Convert API posts to JournalEntries (take only 5 for demo)
-        List<JournalEntry> apiEntries = data.take(5).map((post) => JournalEntry(
-          id: post['id'].toString(),
-          title: post['title'],
-          description: post['body'],
-          createdAt: DateTime.now().subtract(Duration(days: post['id'])),
-        )).toList();
-
-        // Combine API entries with locally created entries
-        apiEntries.addAll(_localEntries);
-        return apiEntries;
+        return data.map((item) => JournalEntry.fromJson(item)).toList();
       } else {
-        // Return local entries if API fails
-        return _localEntries;
+        print('API Error: ${response.statusCode} - ${response.body}');
+        throw Exception('Failed to load entries: ${response.statusCode}');
       }
     } catch (e) {
-      // Return local entries if there's an error
-      return _localEntries;
+      print('Network error: $e');
+      throw Exception('Failed to load entries: $e');
     }
   }
 
   Future<JournalEntry> createEntry(JournalEntry entry) async {
     try {
-      // Add to local storage first
-      _localEntries.add(entry);
-
-      // Also try to send to API (but JSONPlaceholder won't actually save it)
+      print('Creating entry at: $entriesEndpoint');
+      print('Entry data: ${entry.toJson()}');
+      
       final response = await http.post(
-        Uri.parse(postsEndpoint),
+        Uri.parse(entriesEndpoint),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'title': entry.title,
-          'body': entry.description,
-          'userId': 1,
-        }),
+        body: json.encode(entry.toJson()),
       );
 
       if (response.statusCode == 201) {
-        print('Entry created successfully in API');
+        final dynamic data = json.decode(response.body);
+        print('Successfully created entry with ID: ${data['id']}');
+        return JournalEntry.fromJson(data);
       } else {
-        print('API creation failed but entry saved locally');
+        print('API Error: ${response.statusCode} - ${response.body}');
+        throw Exception('Failed to create entry: ${response.statusCode}');
       }
-
-      return entry;
     } catch (e) {
-      print('Error creating entry: $e');
-      // Still return the entry since it's saved locally
-      return entry;
+      print('Network error: $e');
+      throw Exception('Failed to create entry: $e');
+    }
+  }
+
+
+  Future<void> deleteEntry(String entryId) async {
+    try {
+      print('Deleting entry: $entryId');
+      final response = await http.delete(
+        Uri.parse('$entriesEndpoint/$entryId'),
+      );
+
+      if (response.statusCode == 200) {
+        print('Successfully deleted entry: $entryId');
+      } else {
+        print('API Error: ${response.statusCode} - ${response.body}');
+        throw Exception('Failed to delete entry: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Network error: $e');
+      throw Exception('Failed to delete entry: $e');
     }
   }
 }

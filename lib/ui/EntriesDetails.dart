@@ -1,11 +1,50 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/models/entry.dart';
+import 'package:flutter_application_1/services/APIservice.dart';
 
 class EntryDetailPage extends StatelessWidget {
   final JournalEntry entry;
+  final VoidCallback? onEntryDeleted;
 
-  const EntryDetailPage({super.key, required this.entry});
+  const EntryDetailPage({super.key, required this.entry, this.onEntryDeleted});
+
+  void _deleteEntry(BuildContext context) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Entry'),
+          content: const Text('Are you sure you want to delete this entry? This action cannot be undone.'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+            ),
+            TextButton(
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      // Delete the entry
+      final ApiService apiService = ApiService();
+      // You'll need to implement deleteEntry method in ApiService
+      // For now, we'll just navigate back and call the callback
+      if (onEntryDeleted != null) {
+        onEntryDeleted!();
+      }
+      Navigator.of(context).pop();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,6 +52,13 @@ class EntryDetailPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(entry.title),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.red),
+            onPressed: () => _deleteEntry(context),
+            tooltip: 'Delete Entry',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
