@@ -1,6 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/models/entry.dart';
-import 'dart:io';
 
 class EntryDetailPage extends StatelessWidget {
   final JournalEntry entry;
@@ -19,7 +19,7 @@ class EntryDetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (entry.imagePath != null)
+            if (entry.imagePath != null && entry.imagePath!.isNotEmpty)
               Container(
                 width: double.infinity,
                 height: 200,
@@ -38,7 +38,7 @@ class EntryDetailPage extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Created: ${entry.createdAt.day}/${entry.createdAt.month}/${entry.createdAt.year}',
+              'Created: ${entry.createdAt.day}/${entry.createdAt.month}/${entry.createdAt.year} ${entry.createdAt.hour}:${entry.createdAt.minute.toString().padLeft(2, '0')}',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 16),

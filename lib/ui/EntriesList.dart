@@ -1,40 +1,39 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/models/entry.dart';
 import 'package:flutter_application_1/services/APIservice.dart';
 import 'package:flutter_application_1/ui/EntriesDetails.dart';
-import 'dart:io';
 
 class EntriesListPage extends StatefulWidget {
   const EntriesListPage({super.key});
 
   @override
-  State<EntriesListPage> createState() => _EntriesListPageState();
+  EntriesListPageState createState() => EntriesListPageState();
 }
 
-class _EntriesListPageState extends State<EntriesListPage> {
+class EntriesListPageState extends State<EntriesListPage> {
   final ApiService _apiService = ApiService();
   late Future<List<JournalEntry>> _entriesFuture;
-  List<JournalEntry> _entries = [];
+  List<JournalEntry> _allEntries = [];
 
   @override
   void initState() {
     super.initState();
-    _entriesFuture = _loadEntries();
+    _loadEntries();
   }
 
-  Future<List<JournalEntry>> _loadEntries() async {
-    try {
-      final entries = await _apiService.getEntries();
-      _entries = entries;
-      return entries;
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  void _refreshEntries() {
+  void refreshEntries() {
     setState(() {
-      _entriesFuture = _loadEntries();
+      _loadEntries();
+    });
+  }
+
+  void _loadEntries() {
+    setState(() {
+      _entriesFuture = _apiService.getEntries().then((entries) {
+        _allEntries = entries;
+        return entries;
+      });
     });
   }
 
@@ -56,7 +55,8 @@ class _EntriesListPageState extends State<EntriesListPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _refreshEntries,
+            onPressed: refreshEntries,
+            tooltip: 'Refresh',
           ),
         ],
       ),
@@ -66,78 +66,132 @@ class _EntriesListPageState extends State<EntriesListPage> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Failed to load entries',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    snapshot.error.toString(),
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _refreshEntries,
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
+            return _buildErrorState(snapshot.error.toString());
           } else if (snapshot.hasData && snapshot.data!.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.note_add, size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No entries yet',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text('Tap the + button to add your first entry'),
-                ],
-              ),
-            );
+            return _buildEmptyState();
+          } else if (snapshot.hasData) {
+            return _buildEntriesList(snapshot.data!);
           } else {
-            final entries = snapshot.data!;
-            return ListView.builder(
-              itemCount: entries.length,
-              itemBuilder: (context, index) {
-                final entry = entries[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                  child: ListTile(
-                    leading: entry.imagePath != null
-                        ? CircleAvatar(
-                            backgroundImage: FileImage(File(entry.imagePath!)),
-                          )
-                        : CircleAvatar(
-                            child: Icon(
-                              entry.latitude != null ? Icons.location_on : Icons.note,
-                            ),
-                          ),
-                    title: Text(entry.title),
-                    subtitle: Text(
-                      '${entry.createdAt.day}/${entry.createdAt.month}/${entry.createdAt.year}',
-                    ),
-                    trailing: entry.latitude != null 
-                        ? const Icon(Icons.location_on, color: Colors.green)
-                        : null,
-                    onTap: () => _navigateToDetail(entry),
-                  ),
-                );
-              },
-            );
+            return _buildEmptyState();
           }
         },
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 64, color: Colors.red),
+          const SizedBox(height: 16),
+          Text(
+            'Failed to load entries',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32.0),
+            child: Text(
+              error.length > 100 ? 'Network error' : error,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: refreshEntries,
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.note_add, size: 64, color: Colors.grey),
+          const SizedBox(height: 16),
+          Text(
+            'No entries yet',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 8),
+          const Text('Add your first entry using the + tab'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEntriesList(List<JournalEntry> entries) {
+    // Sort entries by date (newest first)
+    entries.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    return ListView.builder(
+      itemCount: entries.length,
+      itemBuilder: (context, index) {
+        final entry = entries[index];
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+          child: ListTile(
+            leading: _buildEntryLeading(entry),
+            title: Text(
+              entry.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  entry.description.length > 50 
+                    ? '${entry.description.substring(0, 50)}...' 
+                    : entry.description,
+                  maxLines: 1,
+                ),
+                Text(
+                  '${entry.createdAt.day}/${entry.createdAt.month}/${entry.createdAt.year} ${entry.createdAt.hour}:${entry.createdAt.minute.toString().padLeft(2, '0')}',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
+            trailing: entry.latitude != null 
+                ? const Icon(Icons.location_on, color: Colors.green, size: 20)
+                : null,
+            onTap: () => _navigateToDetail(entry),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEntryLeading(JournalEntry entry) {
+    if (entry.imagePath != null && entry.imagePath!.isNotEmpty) {
+      try {
+        return CircleAvatar(
+          backgroundImage: FileImage(File(entry.imagePath!)),
+          radius: 20,
+        );
+      } catch (e) {
+        print('Error loading image: $e');
+        return _buildDefaultAvatar(entry);
+      }
+    } else {
+      return _buildDefaultAvatar(entry);
+    }
+  }
+
+  Widget _buildDefaultAvatar(JournalEntry entry) {
+    return CircleAvatar(
+      backgroundColor: entry.latitude != null ? Colors.blue : Colors.grey,
+      child: Icon(
+        entry.latitude != null ? Icons.location_on : Icons.note,
+        color: Colors.white,
+        size: 20,
       ),
     );
   }

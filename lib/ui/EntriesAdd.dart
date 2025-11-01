@@ -1,12 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/models/entry.dart';
 import 'package:flutter_application_1/services/APIservice.dart';
 import 'package:flutter_application_1/services/LocationService.dart';
 import 'package:flutter_application_1/services/ImageService.dart';
-import 'dart:io';
 
 class AddEntryPage extends StatefulWidget {
-  const AddEntryPage({super.key});
+  final VoidCallback? onEntryAdded;
+  
+  const AddEntryPage({super.key, this.onEntryAdded});
 
   @override
   State<AddEntryPage> createState() => _AddEntryPageState();
@@ -57,9 +59,17 @@ class _AddEntryPageState extends State<AddEntryPage> {
   Future<void> _takePicture() async {
     try {
       final image = await _imageService.pickImage();
-      setState(() {
-        _image = image;
-      });
+      if (image != null) {
+        setState(() {
+          _image = image;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Photo taken successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -84,9 +94,14 @@ class _AddEntryPageState extends State<AddEntryPage> {
         description: _descriptionController.text,
         latitude: _latitude,
         longitude: _longitude,
-        imagePath: _image?.path,
+        imagePath: _image?.path, // Store the file path
         createdAt: DateTime.now(),
       );
+
+      print('Creating entry with title: ${newEntry.title}');
+      if (_image != null) {
+        print('Image path: ${_image!.path}');
+      }
 
       await _apiService.createEntry(newEntry);
 
@@ -95,20 +110,24 @@ class _AddEntryPageState extends State<AddEntryPage> {
           const SnackBar(
             content: Text('Entry created successfully!'),
             backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
           ),
         );
 
-        // Clear form and navigate back
+        // Clear form
         _titleController.clear();
         _descriptionController.clear();
         setState(() {
           _latitude = null;
           _longitude = null;
           _image = null;
+          _isSubmitting = false;
         });
 
-        // Navigate back to entries list
-        Navigator.pop(context);
+        // Notify that an entry was added
+        widget.onEntryAdded?.call();
+        
+        print('Entry created and callback called');
       }
     } catch (e) {
       if (mounted) {
@@ -118,14 +137,21 @@ class _AddEntryPageState extends State<AddEntryPage> {
             backgroundColor: Colors.red,
           ),
         );
-      }
-    } finally {
-      if (mounted) {
         setState(() {
           _isSubmitting = false;
         });
       }
     }
+  }
+
+  void _clearForm() {
+    _titleController.clear();
+    _descriptionController.clear();
+    setState(() {
+      _latitude = null;
+      _longitude = null;
+      _image = null;
+    });
   }
 
   @override
@@ -141,6 +167,13 @@ class _AddEntryPageState extends State<AddEntryPage> {
       appBar: AppBar(
         title: const Text('Add New Entry'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.clear),
+            onPressed: _clearForm,
+            tooltip: 'Clear Form',
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
